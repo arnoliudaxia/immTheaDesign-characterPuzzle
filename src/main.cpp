@@ -6,7 +6,7 @@
 
 // #region 通用配置区
 const char *ssid = "embedLab";
-const char *mqtt_server = "192.168.0.200";
+const char *mqtt_server = "192.168.1.200";
 const int mqtt_port = 1883;
 
 WiFiClient espClient;
@@ -17,9 +17,9 @@ char msg[MSG_BUFFER_SIZE];
 // #endregion
 
 // TODO #region 个性化配置
-// #define SWGroup1
+#define SWGroup1
 // #define SWGroup2
-#define SWGroup3
+// #define SWGroup3
 
 const char *cmdTopic = "character/all";
 #ifdef SWGroup1
@@ -32,7 +32,7 @@ const char *reportSwTopic = "report/character2";
 const char *reportSwTopic = "report/character3";
 #endif
 const char *reportTopic = "report/all";
-String clientId(cmdTopic);
+String clientId(reportSwTopic);
 // #endregion
 
 // TODO #region 本地离线逻辑
@@ -73,6 +73,29 @@ void setup_wifi()
   Serial.println(WiFi.localIP());
 }
 
+void correct()
+{
+  // 正确答案，全部亮起来
+  digitalWrite(led1Pin, HIGH);
+  digitalWrite(led2Pin, HIGH);
+  digitalWrite(led3Pin, HIGH);
+}
+void wrong()
+{
+  // 错误答案，闪烁
+  for (size_t i = 0; i < 5; i++)
+  {
+    digitalWrite(led1Pin, HIGH);
+    digitalWrite(led2Pin, HIGH);
+    digitalWrite(led3Pin, HIGH);
+    delay(500);
+    digitalWrite(led1Pin, LOW);
+    digitalWrite(led2Pin, LOW);
+    digitalWrite(led3Pin, LOW);
+    delay(500);
+  }
+}
+
 // 收到mqtt订阅回调
 void callback(char *topic, byte *payload, unsigned int length)
 {
@@ -91,9 +114,10 @@ void callback(char *topic, byte *payload, unsigned int length)
   // char数组再转成String
   String cmdstr(cmd);
   String topicstr(topic);
+  String mcd(cmdTopic);
 
   // TODO =================主逻辑=================
-  if (topicstr == clientId)
+  if (topicstr == mcd)
   {
     Serial.println("ReceiveMyCmd!");
     Serial.println(cmdstr);
@@ -109,6 +133,16 @@ void callback(char *topic, byte *payload, unsigned int length)
       client.publish(reportTopic, "character/3: live");
 #endif
     }
+
+    if(cmdstr=="correct")
+    {
+      correct();
+    }
+    if(cmdstr=="wrong")
+    {
+      wrong();
+    }
+
 #ifdef SWGroup1
     if (cmdstr == "1on")
     {
